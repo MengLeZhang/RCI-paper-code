@@ -21,8 +21,7 @@ TTWA.2011<-gBuffer(TTWA.2011, byid=TRUE, width=-1)
 
 ##  Read in city centres file.
 city.centres<-read.csv('../Data/City centres/UK city centres.csv')
-##  For now we will omit London (which we will handle with a diff script)
-city.centres<-city.centres[-1,]
+city.centres<-city.centres[1,] #take London only
 
 ## Get the city centre points
 mono.centres.sp<-SpatialPointsDataFrame(coords= coordinates(city.centres[,c('EastingD','NorthingD')]),data=data.frame(city.centres),proj4string=CRS(proj4string(TTWA.2011)))
@@ -54,28 +53,7 @@ for (i in 1:length(ttwa.list)){
 }
 
 ##  Distance to nearest centre
-##  Load inthe dataset with multiple centre and make it into a spatial points df
-ttwa.centres<-read.csv('../Data/City centres/ttwa 2011 la centres.csv',stringsAsFactors = F)
-ttwa.centres<-na.omit(ttwa.centres[1:4]) #we do not need the last note col
-ttwa.centres$EastingC<-as.numeric(ttwa.centres$EastingC)
-ttwa.centres.sp<-SpatialPointsDataFrame(coords= coordinates(ttwa.centres[,c('EastingC','NorthingC')]),data=data.frame(ttwa.centres),proj4string=CRS(proj4string(TTWA.2011)))
-
-##  Define the routine
-for (j in 1:length(ttwa.list)){
-  temp.ttwa<-ttwa.list[[j]]
-  temp.centres<-ttwa.centres.sp[ttwa.centres.sp$LA%in%ttwa.list[[j]]$la,] #centre of large LAs even partially in the zone
-  
-  ## Computing the distance to centres stat
-  centroids<-getSpPPolygonsLabptSlots(temp.ttwa)
-  ##  list of vectors denoting distance of a centre
-  distances<-list(NULL)
-  for(i in 1:nrow(temp.centres@data)){
-    distances[[i]]<-euclid.dist(point=c(t(temp.centres@data[i,c('EastingC','NorthingC')])),x=centroids)
-  }
-  distances<-do.call(cbind,distances)
-  ttwa.list[[j]]$dist.nearest<-apply(distances,1,min)
-  ttwa.list[[j]]$centre<-as.character(temp.centres@data$LA[apply(distances,1,which.min)]) #tells us which centre
-}
+##  Not necesarily for London
 
 ##  Accessibility based on Hansen (1959). Guess between -1 and -2 for the exponent
 ##  This is a for loop that calulcate the index (with an extra 100m added to distance for terminal time)
@@ -123,8 +101,8 @@ for (i in 1:length(ttwa.list)){
     
     id2001<-which(names(temp.df)%in%c('jsa2001','is2001','ib2001'))[j]
     id2011<-which(names(temp.df)%in%c('jsa2011','is2011','ib2011'))[j] #this is the cols for the various year data fo each measure
-    id.dist01<-which(names(temp.df)%in%c('dist.d','dist.nearest','hansen1.2001','hansen2.2001'))
-    id.dist11<-which(names(temp.df)%in%c('dist.d','dist.nearest','hansen1.2011','hansen2.2011'))
+    id.dist01<-which(names(temp.df)%in%c('dist.d','hansen1.2001','hansen2.2001'))
+    id.dist11<-which(names(temp.df)%in%c('dist.d','hansen1.2011','hansen2.2011'))
     
     rci2001<-apply(temp.df[,id.dist01],2,rci,y=temp.df[,id2001],x=temp.df$w.pop2001-temp.df[,id2001])
     rci2011<-apply(temp.df[,id.dist11],2,rci,y=temp.df[,id2011],x=round(temp.df$w.pop2011)-temp.df[,id2011])
@@ -141,7 +119,7 @@ for (i in 1:length(ttwa.list)){
 }
 RCI.tables
 RCI.tables<-do.call(rbind,RCI.tables)
-write.csv(RCI.tables,file='../Results/RCI TTWA point estimates.csv')
+write.csv(RCI.tables,file='../Results/RCI London point estimates.csv')
 
 
 ##  Second step for the output is to simply get the above but accounting for the uncertainty
@@ -157,11 +135,11 @@ for (i in 1:length(ttwa.list)){
   saved.results<-list(NULL) #A list that will contain 3 objects; the saved results for jsa, ib, is
   
   for (j in 1:length(var.name)){
-    load(file=paste('../Data/Analysis data/Model estimates/TTWA/',saved.name,var.name[j],'.Rdata',sep='')) #all the list objects are called 'models'
+    load(file=paste('../Data/Analysis data/Model estimates/London/',saved.name,var.name[j],'.Rdata',sep='')) #all the list objects are called 'models'
     
     pred01<-predict.simple(models[[1]],temp.df$w.pop2001)
     pred11<-predict.simple(models[[2]],round(temp.df$w.pop2011))
-
+    
     rm(models)
     
     
@@ -177,18 +155,6 @@ for (i in 1:length(ttwa.list)){
     rci.dist.d.diff<-rci.dist.d.2011-rci.dist.d.2001
     result.dist.d<-lapply(list(rci.dist.d.2001,rci.dist.d.2011,rci.dist.d.diff),quantile,probs=c(0.5,0.025,0.975))
 
-    ##Distance to any centre
-    rci.dist.nearest.2001<-list(NULL)
-    rci.dist.nearest.2011<-list(NULL)
-    for (k in 1:nrow(pred01)){
-      rci.dist.nearest.2001[[k]]<-rci(sort.var=temp.df$dist.nearest,x=temp.df$w.pop2001-pred01[k,],y=pred01[k,])
-      rci.dist.nearest.2011[[k]]<-rci(sort.var=temp.df$dist.nearest,x=temp.df$w.pop2011-pred11[k,],y=pred11[k,])
-    }
-    rci.dist.nearest.2001<-unlist(rci.dist.nearest.2001)
-    rci.dist.nearest.2011<-unlist(rci.dist.nearest.2011)
-    rci.dist.nearest.diff<-rci.dist.nearest.2011-rci.dist.nearest.2001
-    result.dist.nearest<-lapply(list(rci.dist.nearest.2001,rci.dist.nearest.2011,rci.dist.nearest.diff),quantile,probs=c(0.5,0.025,0.975))
-    
     ##Hansen 1
     rci.hansen1.2001<-list(NULL)
     rci.hansen1.2011<-list(NULL)
@@ -212,14 +178,14 @@ for (i in 1:length(ttwa.list)){
     rci.hansen2.2011<-unlist(rci.hansen2.2011)
     rci.hansen2.diff<-rci.hansen2.2011-rci.hansen2.2001
     result.hansen2<-lapply(list(rci.hansen2.2001,rci.hansen2.2011,rci.hansen2.diff),quantile,probs=c(0.5,0.025,0.975))
-
-    saved.results[[j]]<-rbind(unlist(result.dist.d),unlist(result.dist.nearest),
+    
+    saved.results[[j]]<-rbind(unlist(result.dist.d),
                               unlist(result.hansen1),unlist(result.hansen2))
-    row.names(saved.results[[j]])<-c('dist.d','dist.nearest','hansen.1','hansen.2')
+    row.names(saved.results[[j]])<-c('dist.d','hansen.1','hansen.2')
     colnames(saved.results[[j]])<-paste(var.name[j],colnames(saved.results[[j]]))
   }
   rci.raw.ci[[i]]<-do.call(cbind,saved.results)
   rci.raw.ci[[i]]<-cbind(rci.raw.ci[[i]],saved.name)
 }
 rci.raw.tab<-do.call(rbind,rci.raw.ci)
-write.csv(rci.raw.tab,file='../Results/RCI TTWA raw CI.csv')
+write.csv(rci.raw.tab,file='../Results/RCI London raw CI.csv')
