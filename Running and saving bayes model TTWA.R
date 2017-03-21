@@ -14,7 +14,6 @@ source(source.file)
 ##  First: we load in the map and variables datasets-----
 ##  Data load;
 load('../Data/Analysis data/England and Wales benefits 0111 final.Rdata')
-city.centres<-read.csv('../Data/City centres/UK city centres.csv')
 
 ##  load in ttwa
 TTWA.2011<- readOGR(dsn='../Data/TTWA 2011', layer='Travel_to_Work_Areas_December_2011_Full_Extent_Boundaries_in_United_Kingdom') 
