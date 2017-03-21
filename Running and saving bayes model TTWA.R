@@ -14,18 +14,18 @@ source(source.file)
 ##  First: we load in the map and variables datasets-----
 ##  Data load;
 load('../Data/Analysis data/England and Wales benefits 0111 final.Rdata')
+<<<<<<< HEAD
+=======
+city.centres<-read.csv('../Data/City centres/UK city centres.csv')
+city.centres<-city.centres[-1,] #omit London
+>>>>>>> 0299c9d975574363b4fefecfe15b7c0b52facc37
 
 ##  load in ttwa
 TTWA.2011<- readOGR(dsn='../Data/TTWA 2011', layer='Travel_to_Work_Areas_December_2011_Full_Extent_Boundaries_in_United_Kingdom') 
 TTWA.2011<-gBuffer(TTWA.2011, byid=TRUE, width=-1)
 
-##  Read in city centres file.
-city.centres<-read.csv('../Data/City centres/UK city centres.csv')
-##  For now we will omit London (which we will handle with a diff script)
-city.centres<-city.centres[-1,]
-
 ## Get the city centre points
-mono.centres.sp<-SpatialPointsDataFrame(coords= coordinates(city.centres[-1,c('EastingD','NorthingD')]),data=data.frame(city.centres[-1,]),proj4string=CRS(proj4string(TTWA.2011)))
+mono.centres.sp<-SpatialPointsDataFrame(coords= coordinates(city.centres[,c('EastingD','NorthingD')]),data=data.frame(city.centres),proj4string=CRS(proj4string(TTWA.2011)))
 ##  Now we subset to just the ttwa that we are interested in
 
 ##  Before we do that need to also make sure london is included as well.
@@ -42,7 +42,7 @@ for (i in 1:length(valid.ttwa)){
 }
 names(ttwa.list)<-valid.ttwa
 rm(ew.2001) # remvoe shp file to save space
-
+names(ttwa.list)
 
 ##  Second: Now we need to do the model and get the results. We will run the models and save the results
 burnin=20000; n.sample=40000; n.thin=10
