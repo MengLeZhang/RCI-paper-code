@@ -1,9 +1,8 @@
 #######################################################
 ##  This is the analysis for the biggest cities based #
 ##  on local authority                                #
-##  This time the boundaries are drawn based on their #
-##  travel to work areas                              #
-##  We are excluding london from this for now         #
+##  This analysis is for London Only!                 #
+##  Due to the large size of the bayes samples        #
 ##  Start: 18/3/2017                                  #
 #######################################################
 
@@ -26,8 +25,6 @@ city.centres<-city.centres[1,] #take London only
 ## Get the city centre points
 mono.centres.sp<-SpatialPointsDataFrame(coords= coordinates(city.centres[,c('EastingD','NorthingD')]),data=data.frame(city.centres),proj4string=CRS(proj4string(TTWA.2011)))
 ##  Now we subset to just the ttwa that we are interested in
-
-##  Before we do that need to also make sure london is included as well.
 sub.ttwa<-TTWA.2011[mono.centres.sp,]
 sub.ttwa<-sub.ttwa[ew.2001,] #Those in England and Wales
 sub.ttwa<-gBuffer(sub.ttwa, byid=TRUE, width=-0.1)
@@ -120,7 +117,6 @@ for (i in 1:length(ttwa.list)){
 RCI.tables
 RCI.tables<-do.call(rbind,RCI.tables)
 write.csv(RCI.tables,file='../Results/RCI London point estimates.csv')
-
 
 ##  Second step for the output is to simply get the above but accounting for the uncertainty
 ##  The results are already saved; we will complete this for the estimates that used two separate models
