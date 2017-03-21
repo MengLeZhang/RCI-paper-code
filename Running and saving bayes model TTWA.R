@@ -2,6 +2,9 @@
 ##  Bayesian models for RCI based on 2011 TTWA        # 
 ##  boundaries                                        #
 ##  Start: 18/3/2017                                 #
+##  Updated: 21/3/2017                                #
+##  This script now omits london but brings the rest  #
+##  of the models up to correct burnin/samples        #
 #######################################################
 
 ##  Pre: Load in all the RCI functions we need
@@ -19,18 +22,17 @@ TTWA.2011<-gBuffer(TTWA.2011, byid=TRUE, width=-1)
 
 ##  Read in city centres file.
 city.centres<-read.csv('../Data/City centres/UK city centres.csv')
+##  For now we will omit London (which we will handle with a diff script)
+city.centres<-city.centres[-1,]
 
 ## Get the city centre points
 mono.centres.sp<-SpatialPointsDataFrame(coords= coordinates(city.centres[-1,c('EastingD','NorthingD')]),data=data.frame(city.centres[-1,]),proj4string=CRS(proj4string(TTWA.2011)))
 ##  Now we subset to just the ttwa that we are interested in
 
 ##  Before we do that need to also make sure london is included as well.
-london.ttwa<-TTWA.2011[grep('London',TTWA.2011$ttwa11nm),]
 sub.ttwa<-TTWA.2011[mono.centres.sp,]
-#sub.ttwa<-rbind(sub.ttwa,london.ttwa) ##London needs its own special model.
 sub.ttwa<-sub.ttwa[ew.2001,] #Those in England and Wales
 sub.ttwa<-gBuffer(sub.ttwa, byid=TRUE, width=-0.1)
-rm(ew.2001) # remvoe shp file to save space
 
 ##  Step two: 
 ##  The subsetting to only certain ttwa
@@ -40,9 +42,11 @@ for (i in 1:length(valid.ttwa)){
   ttwa.list[[i]]<-ew.2001[sub.ttwa[i,],]
 }
 names(ttwa.list)<-valid.ttwa
+rm(ew.2001) # remvoe shp file to save space
+
 
 ##  Second: Now we need to do the model and get the results. We will run the models and save the results
-burnin=200; n.sample=400; n.thin=10
+burnin=20000; n.sample=40000; n.thin=10
 for (i in 1:length(ttwa.list)){
   saved.name<-names(ttwa.list)[[i]]
   print(paste(saved.name,'model is initialising'))
