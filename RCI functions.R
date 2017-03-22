@@ -105,3 +105,4 @@ predict.simple<-function(LRmodel,trials){
   return(outcomes)
 }
 
+

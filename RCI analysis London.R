@@ -185,3 +185,36 @@ for (i in 1:length(ttwa.list)){
 }
 rci.raw.tab<-do.call(rbind,rci.raw.ci)
 write.csv(rci.raw.tab,file='../Results/RCI London raw CI.csv')
+
+##  Dissimilarity index
+
+di.results<-list(NULL)
+for (i in 1:length(ttwa.list)){
+  saved.name<-names(ttwa.list)[[i]]
+  temp.df<-ttwa.list[[i]]
+  var.name<-c('jsa','ib','is')
+  
+  saved.results<-list(NULL) #A list that will contain 3 objects; the saved results for jsa, ib, is
+  
+  for (j in 1:length(var.name)){
+    load(file=paste('../Data/Analysis data/Model estimates/London/',saved.name,var.name[j],'.Rdata',sep='')) #all the list objects are called 'models'
+    
+    pred01<-predict.simple(models[[1]],temp.df$w.pop2001)
+    pred11<-predict.simple(models[[2]],round(temp.df$w.pop2011))
+    rm(models)
+    
+    di01<-c(NULL);di11<-c(NULL)
+    for (k in 1:nrow(pred01)){
+      di01[[k]]<-sum(abs(pred01[k,]/sum(pred01[k,])-(temp.df$w.pop2001-pred01[k,])/sum(temp.df$w.pop2001-pred01[k,])))/2
+      di11[[k]]<-sum(abs(pred11[k,]/sum(pred11[k,])-(temp.df$w.pop2011-pred11[k,])/sum(temp.df$w.pop2011-pred11[k,])))/2
+    }
+    saved.results[[j]]<-lapply(list(di01,di11,di11-di01),quantile,probs=c(0.5,0.025,0.975))
+    saved.results[[j]]<-do.call(rbind,saved.results[[j]])
+    row.names(saved.results[[j]])<-c('DI2001','DI2011','Diff')
+    colnames(saved.results[[j]])<-paste(var.name[j],colnames(saved.results[[j]]))
+  }
+  
+  di.results[[i]]<-cbind(do.call(cbind,saved.results),city=saved.name)
+}
+di.raw.tab<-do.call(rbind,di.results)
+write.csv(di.raw.tab,file='../Results/DI London raw CI.csv')
