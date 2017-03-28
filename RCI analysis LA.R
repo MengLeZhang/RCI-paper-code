@@ -175,6 +175,85 @@ rci.raw.ci[[i]]<-cbind(rci.raw.ci[[i]],saved.name)
 rci.raw.tab<-do.call(rbind,rci.raw.ci)
 write.csv(rci.raw.tab,file='../Results/RCI LA raw CI.csv')
 
+##  Step 2B: The MCAR results
+
+rci.mcar.ci<-list(NULL)
+
+for (i in 1:length(cities.list)){
+  saved.name<-names(cities.list)[[i]]
+  temp.df<-cities.list[[i]]
+  
+  var.name<-c('jsa','ib','is')
+  
+  saved.results<-list(NULL) #A list that will contain 3 objects; the saved results for jsa, ib, is
+  
+  for (j in 1:length(var.name)){
+    print(paste(saved.name,j))
+    load(file=paste('../Data/Analysis data/Model estimates/LA/MCAR',saved.name,var.name[j],'.Rdata',sep='')) #all the list objects are called 'models'
+    
+    N.mat <- cbind(temp.df$w.pop2001, round(temp.df$w.pop2011))
+    N <- as.numeric(t(N.mat)) #N is an alternating vector [i.e. (pop01,pop11,pop01,pop11 etc for eacg zone)]. Ditto for our fitted values
+
+    pred<-predict.simple(model.MCAR,N)
+    odds<-which(1:ncol(pred)%%2==1)
+    pred01<-pred[,odds] #the odd number rows are the results for each zone in 2001
+    pred11<-pred[,odds+1]
+
+    rm(model.MCAR,pred)
+
+    ##Distance RCI
+    rci.dist.d.2001<-list(NULL)
+    rci.dist.d.2011<-list(NULL)
+    for (k in 1:nrow(pred01)){
+      rci.dist.d.2001[[k]]<-rci(sort.var=temp.df$dist.d,x=temp.df$w.pop2001-pred01[k,],y=pred01[k,])
+      rci.dist.d.2011[[k]]<-rci(sort.var=temp.df$dist.d,x=temp.df$w.pop2011-pred11[k,],y=pred11[k,])
+    }
+    rci.dist.d.2001<-unlist(rci.dist.d.2001)
+    rci.dist.d.2011<-unlist(rci.dist.d.2011)
+    rci.dist.d.diff<-rci.dist.d.2011-rci.dist.d.2001
+    result.dist.d<-lapply(list(rci.dist.d.2001,rci.dist.d.2011,rci.dist.d.diff),quantile,probs=c(0.5,0.025,0.975))
+    
+    ##Hansen 1
+    rci.hansen1.2001<-list(NULL)
+    rci.hansen1.2011<-list(NULL)
+    for (k in 1:nrow(pred01)){
+      rci.hansen1.2001[[k]]<-rci(sort.var=temp.df$hansen1.2001,x=temp.df$w.pop2001-pred01[k,],y=pred01[k,])
+      rci.hansen1.2011[[k]]<-rci(sort.var=temp.df$hansen1.2011,x=temp.df$w.pop2011-pred11[k,],y=pred11[k,])
+    }
+    rci.hansen1.2001<-unlist(rci.hansen1.2001)
+    rci.hansen1.2011<-unlist(rci.hansen1.2011)
+    rci.hansen1.diff<-rci.hansen1.2011-rci.hansen1.2001
+    result.hansen1<-lapply(list(rci.hansen1.2001,rci.hansen1.2011,rci.hansen1.diff),quantile,probs=c(0.5,0.025,0.975))
+    
+    ##Hansen 2
+    rci.hansen2.2001<-list(NULL)
+    rci.hansen2.2011<-list(NULL)
+    for (k in 1:nrow(pred01)){
+      rci.hansen2.2001[[k]]<-rci(sort.var=temp.df$hansen2.2001,x=temp.df$w.pop2001-pred01[k,],y=pred01[k,])
+      rci.hansen2.2011[[k]]<-rci(sort.var=temp.df$hansen2.2011,x=temp.df$w.pop2011-pred11[k,],y=pred11[k,])
+    }
+    rci.hansen2.2001<-unlist(rci.hansen2.2001)
+    rci.hansen2.2011<-unlist(rci.hansen2.2011)
+    rci.hansen2.diff<-rci.hansen2.2011-rci.hansen2.2001
+    result.hansen2<-lapply(list(rci.hansen2.2001,rci.hansen2.2011,rci.hansen2.diff),quantile,probs=c(0.5,0.025,0.975))
+    unlist(result.hansen2)
+    
+    saved.results[[j]]<-rbind(unlist(result.dist.d),unlist(result.hansen1),unlist(result.hansen2))
+    row.names(saved.results[[j]])<-c('dist.d','hansen.1','hansen.2')
+    colnames(saved.results[[j]])<-paste(var.name[j],colnames(saved.results[[j]]))
+  }
+  rci.mcar.ci[[i]]<-do.call(cbind,saved.results)
+  rci.mcar.ci[[i]]<-cbind(rci.mcar.ci[[i]],saved.name)
+}
+
+rci.mcar.ci<-do.call(rbind,rci.mcar.ci)
+write.csv(rci.mcar.ci,file='../Results/RCI LA raw CI mcar.csv')
+
+rci.mcar.ci
+compare<-read.csv('../Results/RCI LA raw CI.csv')
+
+
+
 ##  Step three: We need to get the dissimilarity index results
 
 di.results<-list(NULL)
