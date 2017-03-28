@@ -57,43 +57,36 @@ for (j in 1:length(formula2001)){
   rm(models)
 }
 
-
-##  Third: We will run the results but this time for the pooled model between years
+##  Third: The TTWA model for lond
 burnin=20000; n.sample=40000; n.thin=10
-for (i in 1:length(ttwa.list)){
-  saved.name<-names(ttwa.list)[[i]]
-  print(paste(saved.name,'MCAR model is initialising'))
-  temp.df<-ttwa.list[[i]]
+
+saved.name<-'London'
+W.nb.city <- poly2nb(london)
+W.list.city <- nb2listw(W.nb.city, style = "B") #b is binary code
+W.city <- nb2mat(W.nb.city, style = "B")
+n.city <- nrow(W.city) 
   
-  W.nb.city <- poly2nb(temp.df)
-  W.list.city <- nb2listw(W.nb.city, style = "B") #b is binary code
-  W.city <- nb2mat(W.nb.city, style = "B")
-  n.city <- nrow(W.city) 
+
+##  Creating the dependent variables
+jsa.mat <- cbind(london$jsa2001, london$jsa2011)
+jsa <- as.numeric(t(jsa.mat))
+ib.mat <- cbind(london$ib2001, london$ib2011)
+ib <- as.numeric(t(ib.mat))
+is.mat <- cbind(london$is2001, london$is2011)
+is <- as.numeric(t(is.mat))
+
+N.mat <- cbind(london$w.pop2001, round(london$w.pop2011))
+N <- as.numeric(t(N.mat))
+
+##  We now have to get the models for each DWP statistic
+formula.MCAR<-list(jsa~1,ib~1,is~1)
+var.name<-c('jsa','ib','is')
+
+for (j in 1:length(formula.MCAR)){
   
-  ##  Creating the dependent variables
-  jsa.mat <- cbind(temp.df$jsa2001, temp.df$jsa2011)
-  jsa <- as.numeric(t(jsa.mat))
-  ib.mat <- cbind(temp.df$ib2001, temp.df$ib2011)
-  ib <- as.numeric(t(ib.mat))
-  is.mat <- cbind(temp.df$is2001, temp.df$is2011)
-  is <- as.numeric(t(is.mat))
+  model.MCAR <- MVS.CARleroux(formula=formula.MCAR[[j]], family='binomial',trials=N, W=W.city, burnin=burnin, n.sample=n.sample, thin=n.thin)
   
-  N.mat <- cbind(temp.df$w.pop2001, round(temp.df$w.pop2011))
-  N <- as.numeric(t(N.mat))
-  
-  ##  We now have to get the models for each DWP statistic
-  formula.MCAR<-list(jsa~1,ib~1,is~1)
-  var.name<-c('jsa','ib','is')
-  
-  for (j in 1:length(formula.MCAR)){
-    
-    model.MCAR <- binomial.MCARleroux(formula=formula.MCAR[[j]], trials=N, W=W.city, burnin=burnin, n.sample=n.sample, thin=thin)
-    
-    print(paste(saved.name,'MCAR model results are saving to ../Data/Analysis data/Models estimates/TTWA'))
-    save(models,file=paste('../Data/Analysis data/Model estimates/TTWA/MCAR',saved.name,var.name[j],'.Rdata',sep=''))
-    rm(models)
-  }
+  print(paste(saved.name,'MCAR model results are saving to ../Data/Analysis data/Models estimates/London'))
+  save(model.MCAR,file=paste('../Data/Analysis data/Model estimates/London/MCAR',saved.name,var.name[j],'.Rdata',sep=''))
+  rm(model.MCAR)
 }
-
-
-##  End: All the models should have been saved as R objects for us to use later. 

@@ -75,17 +75,20 @@ for (i in 1:length(ttwa.list)){
   }
 }
 
+
 ##  Third: We will run the results but this time for the pooled model between years
 burnin=20000; n.sample=40000; n.thin=10
 for (i in 1:length(ttwa.list)){
+  
   saved.name<-names(ttwa.list)[[i]]
-  print(paste(saved.name,'MCAR model is initialising'))
+  print(paste(saved.name,'MVS.CARleroux model is initialising'))
   temp.df<-ttwa.list[[i]]
   
   W.nb.city <- poly2nb(temp.df)
   W.list.city <- nb2listw(W.nb.city, style = "B") #b is binary code
   W.city <- nb2mat(W.nb.city, style = "B")
   n.city <- nrow(W.city) 
+  
   
   ##  Creating the dependent variables
   jsa.mat <- cbind(temp.df$jsa2001, temp.df$jsa2011)
@@ -104,13 +107,12 @@ for (i in 1:length(ttwa.list)){
   
   for (j in 1:length(formula.MCAR)){
     
-    model.MCAR <- binomial.MCARleroux(formula=formula.MCAR[[j]], trials=N, W=W.city, burnin=burnin, n.sample=n.sample, thin=thin)
+    model.MCAR <- MVS.CARleroux(formula=formula.MCAR[[j]], family='binomial',trials=N, W=W.city, burnin=burnin, n.sample=n.sample, thin=n.thin)
     
     print(paste(saved.name,'MCAR model results are saving to ../Data/Analysis data/Models estimates/TTWA'))
-    save(models,file=paste('../Data/Analysis data/Model estimates/TTWA/MCAR',saved.name,var.name[j],'.Rdata',sep=''))
-    rm(models)
+    save(model.MCAR,file=paste('../Data/Analysis data/Model estimates/TTWA/MCAR',saved.name,var.name[j],'.Rdata',sep=''))
+    rm(model.MCAR)
   }
 }
-
 
 ##  End: All the models should have been saved as R objects for us to use later. 
