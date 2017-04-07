@@ -224,6 +224,80 @@ for (i in 1:length(ttwa.list)){
 rci.raw.tab<-do.call(rbind,rci.raw.ci)
 write.csv(rci.raw.tab,file='../Results/RCI TTWA raw CI.csv')
 
+### The MCAR version of the same
+
+rci.mcar.ci<-list(NULL)
+
+for (i in 1:length(ttwa.list)){
+  saved.name<-names(ttwa.list)[[i]]
+  temp.df<-ttwa.list[[i]]
+  
+  var.name<-c('jsa','ib','is')
+  
+  saved.results<-list(NULL) #A list that will contain 3 objects; the saved results for jsa, ib, is
+  
+  for (j in 1:length(var.name)){
+    print(paste(saved.name,j))
+    load(file=paste('../Data/Analysis data/Model estimates/TTWA/MCAR',saved.name,var.name[j],'.Rdata',sep='')) #all the list objects are called 'models'
+    
+    N.mat <- cbind(temp.df$w.pop2001, round(temp.df$w.pop2011))
+    N <- as.numeric(t(N.mat)) #N is an alternating vector [i.e. (pop01,pop11,pop01,pop11 etc for eacg zone)]. Ditto for our fitted values
+    
+    pred<-predict.simple(model.MCAR,N)
+    odds<-which(1:ncol(pred)%%2==1)
+    pred01<-pred[,odds] #the odd number rows are the results for each zone in 2001
+    pred11<-pred[,odds+1]
+    
+    rm(model.MCAR,pred)
+    
+    ##Distance RCI
+    rci.dist.d.2001<-list(NULL)
+    rci.dist.d.2011<-list(NULL)
+    for (k in 1:nrow(pred01)){
+      rci.dist.d.2001[[k]]<-rci(sort.var=temp.df$dist.d,x=temp.df$w.pop2001-pred01[k,],y=pred01[k,])
+      rci.dist.d.2011[[k]]<-rci(sort.var=temp.df$dist.d,x=temp.df$w.pop2011-pred11[k,],y=pred11[k,])
+    }
+    rci.dist.d.2001<-unlist(rci.dist.d.2001)
+    rci.dist.d.2011<-unlist(rci.dist.d.2011)
+    rci.dist.d.diff<-rci.dist.d.2011-rci.dist.d.2001
+    result.dist.d<-lapply(list(rci.dist.d.2001,rci.dist.d.2011,rci.dist.d.diff),quantile,probs=c(0.5,0.025,0.975))
+    
+    ##Hansen 1
+    rci.hansen1.2001<-list(NULL)
+    rci.hansen1.2011<-list(NULL)
+    for (k in 1:nrow(pred01)){
+      rci.hansen1.2001[[k]]<-rci(sort.var=temp.df$hansen1.2001,x=temp.df$w.pop2001-pred01[k,],y=pred01[k,])
+      rci.hansen1.2011[[k]]<-rci(sort.var=temp.df$hansen1.2011,x=temp.df$w.pop2011-pred11[k,],y=pred11[k,])
+    }
+    rci.hansen1.2001<-unlist(rci.hansen1.2001)
+    rci.hansen1.2011<-unlist(rci.hansen1.2011)
+    rci.hansen1.diff<-rci.hansen1.2011-rci.hansen1.2001
+    result.hansen1<-lapply(list(rci.hansen1.2001,rci.hansen1.2011,rci.hansen1.diff),quantile,probs=c(0.5,0.025,0.975))
+    
+    ##Hansen 2
+    rci.hansen2.2001<-list(NULL)
+    rci.hansen2.2011<-list(NULL)
+    for (k in 1:nrow(pred01)){
+      rci.hansen2.2001[[k]]<-rci(sort.var=temp.df$hansen2.2001,x=temp.df$w.pop2001-pred01[k,],y=pred01[k,])
+      rci.hansen2.2011[[k]]<-rci(sort.var=temp.df$hansen2.2011,x=temp.df$w.pop2011-pred11[k,],y=pred11[k,])
+    }
+    rci.hansen2.2001<-unlist(rci.hansen2.2001)
+    rci.hansen2.2011<-unlist(rci.hansen2.2011)
+    rci.hansen2.diff<-rci.hansen2.2011-rci.hansen2.2001
+    result.hansen2<-lapply(list(rci.hansen2.2001,rci.hansen2.2011,rci.hansen2.diff),quantile,probs=c(0.5,0.025,0.975))
+    unlist(result.hansen2)
+    
+    saved.results[[j]]<-rbind(unlist(result.dist.d),unlist(result.hansen1),unlist(result.hansen2))
+    row.names(saved.results[[j]])<-c('dist.d','hansen.1','hansen.2')
+    colnames(saved.results[[j]])<-paste(var.name[j],colnames(saved.results[[j]]))
+  }
+  rci.mcar.ci[[i]]<-do.call(cbind,saved.results)
+  rci.mcar.ci[[i]]<-cbind(rci.mcar.ci[[i]],saved.name)
+}
+
+rci.mcar.ci<-do.call(rbind,rci.mcar.ci)
+write.csv(rci.mcar.ci,file='../Results/RCI TTWA raw CI mcar.csv')
+
 ##  Dissimilarity index----
 
 di.results<-list(NULL)
@@ -257,3 +331,45 @@ for (i in 1:length(ttwa.list)){
 di.raw.tab<-do.call(rbind,di.results)
 write.csv(di.raw.tab,file='../Results/DI TTWA raw CI.csv')
 
+## MCAR version
+
+di.results.mcar<-list(NULL)
+for (i in 1:length(ttwa.list)){
+  saved.name<-names(ttwa.list)[[i]]
+  temp.df<-ttwa.list[[i]]
+  var.name<-c('jsa','ib','is')
+  
+  saved.results<-list(NULL) #A list that will contain 3 objects; the saved results for jsa, ib, is
+  
+  for (j in 1:length(var.name)){
+    
+    print(paste(saved.name,j))
+    load(file=paste('../Data/Analysis data/Model estimates/TTWA/MCAR',saved.name,var.name[j],'.Rdata',sep='')) #all the list objects are called 'models'
+    
+    N.mat <- cbind(temp.df$w.pop2001, round(temp.df$w.pop2011))
+    N <- as.numeric(t(N.mat)) #N is an alternating vector [i.e. (pop01,pop11,pop01,pop11 etc for eacg zone)]. Ditto for our fitted values
+    
+    pred<-predict.simple(model.MCAR,N)
+    odds<-which(1:ncol(pred)%%2==1)
+    pred01<-pred[,odds] #the odd number rows are the results for each zone in 2001
+    pred11<-pred[,odds+1]
+    
+    rm(model.MCAR,pred)
+    
+    di01<-c(NULL);di11<-c(NULL)
+    for (k in 1:nrow(pred01)){
+      di01[[k]]<-sum(abs(pred01[k,]/sum(pred01[k,])-(temp.df$w.pop2001-pred01[k,])/sum(temp.df$w.pop2001-pred01[k,])))/2
+      di11[[k]]<-sum(abs(pred11[k,]/sum(pred11[k,])-(temp.df$w.pop2011-pred11[k,])/sum(temp.df$w.pop2011-pred11[k,])))/2
+    }
+    saved.results[[j]]<-lapply(list(di01,di11,di11-di01),quantile,probs=c(0.5,0.025,0.975))
+    saved.results[[j]]<-do.call(rbind,saved.results[[j]])
+    row.names(saved.results[[j]])<-c('DI2001','DI2011','Diff')
+    colnames(saved.results[[j]])<-paste(var.name[j],colnames(saved.results[[j]]))
+  }
+  
+  di.results.mcar[[i]]<-cbind(do.call(cbind,saved.results),city=saved.name)
+}
+di.raw.mcar.tab<-do.call(rbind,di.results.mcar)
+write.csv(di.raw.mcar.tab,file='../Results/DI TTWA raw CI mcar.csv')
+
+##  End
