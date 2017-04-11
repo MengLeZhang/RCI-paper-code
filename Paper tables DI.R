@@ -4,9 +4,7 @@
 ###########################################
 
 source('Tabling function.R')
-##  Just a quick and easy function to extract the right cols from a tabl
-
-
+##  Just a quick and easy function to extract the right cols from a table
 
 ##  The DI simiilarity index
 ##  la
@@ -42,3 +40,22 @@ format.ttwa.di.mcar<-data.frame(jsa=tab.format1(ttwa.di.mcar[,2],ttwa.di.mcar[,3
                                 city=ttwa.di.mcar$city,
                                 stat=ttwa.di.mcar$X)
 write.csv(format.ttwa.di.mcar,file='../Results/Formatted results/ttwa di mcar formatted.csv')
+
+##  london
+london.di
+london.di<-read.csv('C:/Users/USer/Documents/SMI analysis/UK RCI paper 1/Results/DI London raw CI.csv')
+format.london.di<-data.frame(jsa=tab.format1(london.di[,2],london.di[,3],london.di[,4]),
+                             ib=tab.format1(london.di[,5],london.di[,6],london.di[,7]),
+                             is=tab.format1(london.di[,8],london.di[,9],london.di[,10]),
+                             city=london.di$city,
+                             stat=london.di$X)
+write.csv(format.london.di,file='../Results/Formatted results/London di formatted.csv')
+
+london.di.mcar<-read.csv('C:/Users/USer/Documents/SMI analysis/UK RCI paper 1/Results/DI London raw CI mcar.csv')
+format.london.di.mcar<-data.frame(jsa=tab.format1(london.di.mcar[,2],london.di.mcar[,3],london.di.mcar[,4]),
+                                  ib=tab.format1(london.di.mcar[,5],london.di.mcar[,6],london.di.mcar[,7]),
+                                  is=tab.format1(london.di.mcar[,8],london.di.mcar[,9],london.di.mcar[,10]),
+                                  city=london.di.mcar$city,
+                                  stat=london.di.mcar$X)
+write.csv(format.london.di.mcar,file='../Results/Formatted results/London di mcar formatted.csv')
+
