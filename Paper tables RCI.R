@@ -10,7 +10,7 @@ source('Tabling function.R')
 ##  la
 la.rci<-read.csv('C:/Users/USer/Documents/SMI analysis/UK RCI paper 1/Results/RCI LA raw CI.csv')
 names(la.rci)
-
+format.la.rci
 format.la.rci<-data.frame(jsa2001=tab.format1(la.rci[,2],la.rci[,3],la.rci[,4]),
                          jsa2011=tab.format1(la.rci[,5],la.rci[,6],la.rci[,7]),
                          jsadiff=tab.format1(la.rci[,8],la.rci[,9],la.rci[,10]),
@@ -21,7 +21,9 @@ format.la.rci<-data.frame(jsa2001=tab.format1(la.rci[,2],la.rci[,3],la.rci[,4]),
                          is2011=tab.format1(la.rci[,23],la.rci[,24],la.rci[,25]),
                          isdiff=tab.format1(la.rci[,26],la.rci[,27],la.rci[,28]),
                          city=la.rci$saved.name,
-                         stat=la.rci$X)
+                         stat=c('Distance','Lambda(1)','Lambda(2)'))
+
+
 write.csv(format.la.rci,file='../Results/Formatted results/la rci formatted.csv')
 
 ## la mcar
@@ -38,7 +40,7 @@ format.la.rci.mcar<-data.frame(jsa2001=tab.format1(la.rci.mcar[,2],la.rci.mcar[,
                                is2011=tab.format1(la.rci.mcar[,23],la.rci.mcar[,24],la.rci.mcar[,25]),
                                isdiff=tab.format1(la.rci.mcar[,26],la.rci.mcar[,27],la.rci.mcar[,28]),
                                city=la.rci.mcar$saved.name,
-                               stat=la.rci.mcar$X)
+                               stat=c('Distance','Lambda(1)','Lambda(2)'))
 write.csv(format.la.rci.mcar,file='../Results/Formatted results/la rci mcar formatted.csv')
 
 ##  ttwa
@@ -55,7 +57,7 @@ format.ttwa.rci<-data.frame(jsa2001=tab.format1(ttwa.rci[,2],ttwa.rci[,3],ttwa.r
                             is2011=tab.format1(ttwa.rci[,23],ttwa.rci[,24],ttwa.rci[,25]),
                             isdiff=tab.format1(ttwa.rci[,26],ttwa.rci[,27],ttwa.rci[,28]),
                             city=ttwa.rci$saved.name,
-                            stat=ttwa.rci$X)
+                            stat=c('Distance','Nearest distane','Lambda(1)','Lambda(2)'))
 write.csv(format.ttwa.rci,file='../Results/Formatted results/ttwa rci formatted.csv')
 
 ## ttwa mcar
@@ -72,7 +74,7 @@ format.ttwa.rci.mcar<-data.frame(jsa2001=tab.format1(ttwa.rci.mcar[,2],ttwa.rci.
                                  is2011=tab.format1(ttwa.rci.mcar[,23],ttwa.rci.mcar[,24],ttwa.rci.mcar[,25]),
                                  isdiff=tab.format1(ttwa.rci.mcar[,26],ttwa.rci.mcar[,27],ttwa.rci.mcar[,28]),
                                  city=ttwa.rci.mcar$saved.name,
-                                 stat=ttwa.rci.mcar$X)
+                                 stat=c('Distance','Nearest distane','Lambda(1)','Lambda(2)'))
 write.csv(format.ttwa.rci.mcar,file='../Results/Formatted results/ttwa rci mcar formatted.csv')
 
 
@@ -90,7 +92,7 @@ format.london.rci<-data.frame(jsa2001=tab.format1(london.rci[,2],london.rci[,3],
                               is2011=tab.format1(london.rci[,23],london.rci[,24],london.rci[,25]),
                               isdiff=tab.format1(london.rci[,26],london.rci[,27],london.rci[,28]),
                               city=london.rci$saved.name,
-                              stat=london.rci$X)
+                              stat=c('Distance','Lambda(1)','Lambda(2)'))
 write.csv(format.london.rci,file='../Results/Formatted results/london rci formatted.csv')
 
 ## london mcar
@@ -107,7 +109,7 @@ format.london.rci.mcar<-data.frame(jsa2001=tab.format1(london.rci.mcar[,2],londo
                                    is2011=tab.format1(london.rci.mcar[,23],london.rci.mcar[,24],london.rci.mcar[,25]),
                                    isdiff=tab.format1(london.rci.mcar[,26],london.rci.mcar[,27],london.rci.mcar[,28]),
                                    city=london.rci.mcar$saved.name,
-                                   stat=london.rci.mcar$X)
+                                   stat=c('Distance','Lambda(1)','Lambda(2)'))
 write.csv(format.london.rci.mcar,file='../Results/Formatted results/london rci mcar formatted.csv')
 
 
