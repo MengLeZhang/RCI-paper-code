@@ -71,4 +71,6 @@ ew.2001$work.pop2001<-lsoa.workpop2001$x[match(ew.2001$lsoa01cd,lsoa.workpop2001
 
 ##  Now we save tge ew.2001 data set for the future
 save(file='../Data/Analysis data/England and Wales 0111 temp.Rdata',ew.2001)
+
+##  End
 rm(list = ls())

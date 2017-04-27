@@ -145,4 +145,4 @@ ACI.tables<-do.call(rbind,ACI.tables)
 write.csv(ACI.tables,file='../Results/ACI TTWA point estimates.csv')
 
 ## End for now
-
+rm(list = ls())

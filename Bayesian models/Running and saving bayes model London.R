@@ -90,3 +90,6 @@ for (j in 1:length(formula.MCAR)){
   save(model.MCAR,file=paste('../Data/Analysis data/Model estimates/London/MCAR',saved.name,var.name[j],'.Rdata',sep=''))
   rm(model.MCAR)
 }
+
+##End 
+rm(list = ls())

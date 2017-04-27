@@ -28,4 +28,6 @@ oa.lsoa.list[[i]]<-cbind(oa=as.character(sub$oa.2001.name),lsoa=as.character(ew.
 nrow(oa.lsoa.tab)==nrow(oa.2001) #all there
 oa.lsoa.tab<-do.call(rbind,oa.lsoa.list)
 write.csv(oa.lsoa.tab,'../Data/OA 2001/OA to LSOA 2001 lookup table.csv')
+
+##End
 rm(list = ls()) #finish by removing all

@@ -116,3 +116,4 @@ for (i in 1:length(ttwa.list)){
 }
 
 ##  End: All the models should have been saved as R objects for us to use later. 
+rm(list = ls())
