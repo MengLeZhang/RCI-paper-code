@@ -45,8 +45,12 @@ rm(ew.2001) # remvoe shp file to save space
 names(ttwa.list)
 
 ##  Second: Unlike LA we need 3 different distance ordering variables. One is distance from city centre (we will choose mid point D). Another is closes distance to a centre. Yet another is by some sort of accessibility index
+ttwa.list
 
 ##  Distance by centre. Variable dist.d. Each ttwa has only one match to a city
+i<-1
+temp.mids
+ttwa.list[[i]]
 for (i in 1:length(ttwa.list)){
   temp.mids<-mono.centres.sp[ttwa.list[[i]],]
   centroids<-getSpPPolygonsLabptSlots(ttwa.list[[i]])

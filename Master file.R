@@ -36,12 +36,19 @@ source('Analysis code/ACI analysis TTWA.R')
 source('Analysis code/ACI analysis London.R') 
 
 ##  Step four: Sensivity analysis
+##  Rboustness test one: looking at the results using only the unchanged zones
+source('Sensitivity analysis/Robustness test 1 omitting changed LSOAs LA.R')
+source('Sensitivity analysis/Robustness test 1 omitting changed LSOAs TTWA.R')
+source('Sensitivity analysis/Robustness test 1 omitting changed LSOAs London.R')
+
+##  Robustness test two: the results by expanding and contracting the LA borders
+
 
 ##  Step five: Graphing and tabling function (subject to change)
-source('Analysis code/ACI analysis LA.R') 
-source('Analysis code/ACI analysis TTWA.R') 
-source('Analysis code/ACI analysis London.R') 
-
-
+source('Graphs and tables/Tabling function.R') # This contains a ready made function for formatting tables 
+source('Graphs and tables/Paper tables.R') #as described
+source('Graphs and tables/Paper tables RCI.R') #another possible (duplicated) code
+source('Graphs and tables/Paper tables DI.R')
+source('Graphs and tables/Graphing ACI change.R')
 
 ### These are the analysis files:
