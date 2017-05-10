@@ -1,8 +1,9 @@
-##############################################
-##  ACI TTWA analysis                       #
-##  Start: 21/4/2017                        #
-##############################################
-
+##################################################################################
+##  ACI analysis for ttwa                                                         ##
+##  This is a script that looks at the ACI over time                            ##
+##  but using the dwp jsa over a period of years                                ##
+##  Start: 8/5/2017                                                            ##
+##################################################################################
 ##  Pre: Load in all the RCI functions we need
 source.file<-'RCI functions.R' #path to source
 source(source.file)
@@ -11,6 +12,13 @@ source(source.file)
 ##  Data load;
 load('../Data/Analysis data/England and Wales benefits 0111 final.Rdata')
 used.crs<-crs(ew.2001)
+
+##  We need to merge the dataset with jsa data
+jsa.df<-read.csv('../Data/DWP data/jsa 2000 to 2016.csv',stringsAsFactors = F)
+jsa.df$lsoa01cd<-substr(jsa.df$super.output.areas...lower.layer,1,9)
+table(jsa.df$lsoa01cd%in%ew.2001$lsoa01cd) #the missing variable is just the coloum total
+ew.2001<-merge(ew.2001,jsa.df,by='lsoa01cd') #replace the ew.2001 with a merged version
+
 
 ##  Read in city centres file.
 city.centres<-read.csv('../Data/City centres/UK city centres.csv')
@@ -99,63 +107,31 @@ for (i in 1:length(ttwa.list)){
   ttwa.list[[i]]<-cbind(ttwa.list[[i]],ttwa.emp[[i]])
 }
 
+
+
 ##  ACI routine----
 ##  Third: Now for each city we have to establish a routine for working out the ACI results
 ##  There is a variable st_areasha that gives us the area
 
 ##  First we will get the point estimates; this is for checking as much as anything else
-RCI.tables<-list(NULL)
-gRCI.tables<-list(NULL)
+##  We repeat it for every col for jsa
+ACI.tables<-list(NULL)
 for (i in 1:length(ttwa.list)){
-  
   temp.df<-ttwa.list[[i]]@data #we only need the data file from here on in 
+  names(temp.df)
   ##  We will need to work out the rci for the various cols
-  temp.rci<-list(NULL)
-  temp.grci<-list(NULL)
-  
-  for(j in 1:3){
-    id2001<-which(names(temp.df)%in%c('jsa2001','is2001','ib2001'))[j]
-    id2011<-which(names(temp.df)%in%c('jsa2011','is2011','ib2011'))[j] #this is the cols for the various year data fo each measure
-    id.dist01<-which(names(temp.df)%in%c('dist.d','dist.nearest','hansen1.2001','hansen2.2001'))
-    id.dist11<-which(names(temp.df)%in%c('dist.d','dist.nearest','hansen1.2011','hansen2.2011'))
-    
-    g.rci2001<-apply(temp.df[,id.dist01],2,g.rci,y=temp.df[,id2001],x=temp.df$st_areasha)
-    g.rci2011<-apply(temp.df[,id.dist11],2,g.rci,y=temp.df[,id2011],x=temp.df$st_areasha)
-    temp.tab<-cbind(g.rci2001,g.rci2011)
-    out.tab<-aggregate(temp.tab,by=list(temp.df$centre),sum)
-    total.ttwa<-c(colSums(out.tab[,-1]))
-    total.ttwa<-data.frame(matrix(total.ttwa,ncol=2))
-    total.ttwa$diff<-total.ttwa$X2-total.ttwa$X1
-    
-    temp.rci[[j]]<-total.ttwa
-    temp.grci[[j]]<-out.tab
-  }
-  
-  #rci table
-  
-  temp.res<-data.frame(do.call(cbind,temp.rci))
-  temp.res<-round(temp.res,4)
-  temp.res$city<-names(ttwa.list)[[i]]
-  temp.res$stat<-c('dist.d','dist.nearest','hansen1','hansen2')
-  RCI.tables[[i]]<-temp.res
-  
-  ##Tables  
-  temp.res2<-data.frame(do.call(rbind,temp.grci))
-  temp.diff2<-temp.res2[,6:9]-temp.res2[,2:5]
-  temp.res2<-data.frame(temp.res2,temp.diff2)
-  temp.res2[,-1]<-round(temp.res2[,-1],4)
-  temp.res2$city<-names(ttwa.list)[[i]]
-  temp.res2$stat<-c('jsa','is','ib')
-  gRCI.tables[[i]]<-temp.res2
-}
-RCI.tables
-RCI.tables<-do.call(rbind,RCI.tables)
-colnames(RCI.tables)<-c(rep('jsa',3),rep('is',3),rep('ib',3))
-write.csv(RCI.tables,file='../Results/ACI TTWA point estimates.csv')
+  ##all the census stuff is for may so we find the cols that say may
+  which.may<-grep('May',names(temp.df))
 
-gRCI.tables
-gRCI.tables<-do.call(rbind,gRCI.tables)
-write.csv(gRCI.tables,file='../Results/gACI TTWA point estimates.csv')
+  aci.may.d<-apply(temp.df[,which.may],2,rci,sort.var=temp.df$dist.d,x=temp.df$st_areasha)
+  aci.may.near<-apply(temp.df[,which.may],2,rci,sort.var=temp.df$dist.nearest,x=temp.df$st_areasha)
+  
+  ACI.tables[[i]]<-data.frame(rbind(aci.may.d,aci.may.near),city=names(ttwa.list)[i])
+  
+}
+ACI.tables
+ACI.tables<-do.call(rbind,ACI.tables)
+write.csv(ACI.tables,file='../Results/ACI ttwa point estimates 00-16.csv')
 
 
 ## End for now

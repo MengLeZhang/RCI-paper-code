@@ -5,6 +5,8 @@
 ##  Start: 25/11/2016 so we have JSA, IS, IB for 2001 #
 ##  and 2010. So far we only have pop for 2001 due to #
 ##  changes in LSOA                                   #
+##  Update: 3/5/2016 we are adding ttwa labels to each#
+##  lsoa as well as the coordinates for the pop weighted centroids ####
 #######################################################
 
 ##  Pre: Get functions; mostly used just to load in the general gis functions rather than our custom rci ones
@@ -69,7 +71,32 @@ oa.lsoa.2001$workpop.201<-as.numeric(oa.workpop.2001$X2001[match(oa.lsoa.2001$oa
 lsoa.workpop2001<-aggregate(oa.lsoa.2001$workpop.201,by=list(oa.lsoa.2001$lsoa),sum)
 ew.2001$work.pop2001<-lsoa.workpop2001$x[match(ew.2001$lsoa01cd,lsoa.workpop2001$Group.1)]
 
-##  Now we save tge ew.2001 data set for the future
+##  update: 3/5/2017  ####
+##  Adding ttwa labels
+ew.2001$idno<-1:length(ew.2001)
+ttwa<-rep(NA,length(ew.2001))
+
+TTWA.2001<- readOGR(dsn='../Data/TTWA 2001', layer='Travel_to_Work_Areas_December_2001_Full_Clipped_Boundaries_in_the_United_Kingdom') 
+TTWA.2001<-gBuffer(TTWA.2001, byid=TRUE, width=-1) #shrink the size of the polygon a tad 
+
+for (i in 1:length(TTWA.2001)){
+  which.row<-ew.2001[TTWA.2001[i,],]$idno
+  ttwa[which.row]<-as.character(TTWA.2001$ttwa01nm)[i]
+}
+
+ew.2001$ttwa<-ttwa
+head(ew.2001)
+sum(is.na(ew.2001$ttwa))
+
+##  Adding coordinates for the population weighted centroids. ----
+ew.cent<- readOGR(dsn='../Data/LSOA 2001', layer='Lower_Layer_Super_Output_Areas_December_2001_Population_Weighted_Centroids')
+summary(ew.cent)
+ew.cent@data$cent.x<-coordinates(ew.cent)[,1]
+ew.cent@data$cent.y<-coordinates(ew.cent)[,2]
+
+ew.2001<-merge(ew.2001,ew.cent@data,by='lsoa01cd')
+
+##  >Now we save tge ew.2001 data set for the future
 save(file='../Data/Analysis data/England and Wales 0111 temp.Rdata',ew.2001)
 
 ##  End

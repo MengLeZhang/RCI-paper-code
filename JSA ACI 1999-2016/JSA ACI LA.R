@@ -1,9 +1,10 @@
 ##################################################################################
-##  ACI analysis                                                                ##
+##  ACI analysis for LA                                                         ##
 ##  This is a script that looks at the ACI over time                            ##
-##  This will be based strongly around how we did RCI                           ##
-##  Start: 21/4/2017                                                            ##
+##  but using the dwp jsa over a period of years                                ##
+##  Start: 8/5/2017                                                            ##
 ##################################################################################
+
 ##  Pre: Load in all the RCI functions we need
 source.file<-'RCI functions.R' #path to source
 source(source.file)
@@ -11,6 +12,14 @@ source(source.file)
 ##  First: we load in the map and variables datasets-----
 ##  Data load;
 load('../Data/Analysis data/England and Wales benefits 0111 final.Rdata')
+
+##  We need to merge the dataset with jsa data
+jsa.df<-read.csv('../Data/DWP data/jsa 2000 to 2016.csv',stringsAsFactors = F)
+jsa.df$lsoa01cd<-substr(jsa.df$super.output.areas...lower.layer,1,9)
+table(jsa.df$lsoa01cd%in%ew.2001$lsoa01cd) #the missing variable is just the coloum total
+ew.2001<-merge(ew.2001,jsa.df,by='lsoa01cd') #replace the ew.2001 with a merged version
+
+##  City centre
 city.centres<-read.csv('../Data/City centres/UK city centres.csv')
 
 ##  The subsetting to only certain cities used in the analysis
@@ -36,15 +45,15 @@ for (i in 1:length(cities.list)){
 ##  This is a for loop that calulcate the index (with an extra 100m added to distance for terminal time)
 cities.emp<-list(NULL)
 for (k in 1:length(cities.list)){
+  temp.df<-cities.list[[k]]
+  centroids<-cities.list[[k]]@data[,c("cent.x","cent.y")]
   temp.df<-cities.list[[k]]@data
-  centroids<-temp.df[,c("cent.x","cent.y")]
-
   
   temp.emp<-list(NULL)
   for (i in 1:nrow(temp.df)){
     temp.dist<-euclid.dist(point=as.numeric(centroids[i,]),x=centroids)
     temp.out<-list(NULL)
-
+    
     ## 2001 accessibility index. We need the negative of accessibility
     hansen1.2001<--sum(temp.df$work.pop2001*(temp.dist+100)^(-1))
     hansen2.2001<--sum(temp.df$work.pop2001*(temp.dist+100)^(-2))
@@ -64,46 +73,38 @@ for (i in 1:length(cities.list)){
 }
 
 
-
 ##  ACI routine----
 ##  Third: Now for each city we have to establish a routine for working out the ACI results
 ##  There is a variable st_areasha that gives us the area
 
 ##  First we will get the point estimates; this is for checking as much as anything else
+##  We repeat it for every col for jsa
 ACI.tables<-list(NULL)
 for (i in 1:length(cities.list)){
   
   temp.df<-cities.list[[i]]@data #we only need the data file from here on in 
   names(temp.df)
   ##  We will need to work out the rci for the various cols
-  for(j in 1:3){
+  ##all the census stuff is for may so we find the cols that say may
+    which.may<-grep('May',names(temp.df))
     
-    id2001<-which(names(temp.df)%in%c('jsa2001','is2001','ib2001'))[j]
-    id2011<-which(names(temp.df)%in%c('jsa2011','is2011','ib2011'))[j] #this is the cols for the various year data fo each measure
-    id.dist01<-which(names(temp.df)%in%c('dist.d'))
-    id.dist11<-which(names(temp.df)%in%c('dist.d'))
+    aci.may<-apply(temp.df[,which.may],2,rci,sort.var=temp.df$dist.d,x=temp.df$st_areasha)
     
-    y.2001<-cbind(temp.df[,id2001],temp.df$w.pop2001-temp.df[,id2001]) #cols of the claimant and non-claimants
-    y.2011<-cbind(temp.df[,id2011],round(temp.df$w.pop2011)-temp.df[,id2011])
-    
-    aci2001<-apply(y.2001,2,rci,sort.var=temp.df[,id.dist01],x=temp.df$st_areasha)
-    aci2011<-apply(y.2011,2,rci,sort.var=temp.df[,id.dist11],x=temp.df$st_areasha)
-    temp.out[[j]]<-cbind(aci2001,aci2011)
-  }
-  
-  temp.res<-data.frame(do.call(cbind,temp.out))
-  temp.res$jsadiff<-temp.res[,2]-temp.res[,1]
-  temp.res$isdiff<-temp.res[,4]-temp.res[,3]
-  temp.res$ibdiff<-temp.res[,6]-temp.res[,5]
-  temp.res<-round(temp.res,4)
-  temp.res$city<-names(cities.list)[[i]]
-  temp.res$type<-c('claimants','non-claimants')
-  ACI.tables[[i]]<-temp.res
+  ACI.tables[[i]]<-aci.may
 }
 ACI.tables
 ACI.tables<-do.call(rbind,ACI.tables)
-write.csv(ACI.tables,file='../Results/ACI LA point estimates.csv')
+ACI.tables<-data.frame(ACI.tables,city=names(cities.list))
+write.csv(ACI.tables,file='../Results/ACI LA point estimates 00-16.csv')
+
+##> Table of centre populations within 2km;
+ew.cities<-do.call(rbind,cities.list)
+names(ew.cities)
+stats<-c('May.08','May.09','dist.d')
+
+la2k<-subset(ew.cities@data,subset=dist.d<2000)
+la2k.tab<-aggregate(la2k[,stats],by=list(la2k$la),FUN=sum)
+write.csv(la2k.tab,'../Results/JSA count within 2k LA.csv')
 
 ## End for now
 rm(list = ls())
-

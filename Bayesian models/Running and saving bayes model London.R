@@ -15,16 +15,8 @@ source(source.file)
 ##  Data load; Just taking London
 load('../Data/Analysis data/England and Wales benefits 0111 final.Rdata')
 
-##  load in ttwa
-TTWA.2011<- readOGR(dsn='../Data/TTWA 2011', layer='Travel_to_Work_Areas_December_2011_Full_Extent_Boundaries_in_United_Kingdom') 
-TTWA.2011<-gBuffer(TTWA.2011, byid=TRUE, width=-1)
-london<-TTWA.2011[grep('London',TTWA.2011$ttwa11nm),]
-
 ##  Subset the LSOA file to just london
-london<-ew.2001[london,]
-
-##  Step two: 
-##  The subsetting to only certain ttwa
+london<-subset(ew.2001,ttwa=='London')
 rm(ew.2001) # remove shp file to save space
 
 ##  Second: Now we need to do the model and get the results. We will run the models and save the results

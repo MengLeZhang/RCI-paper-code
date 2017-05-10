@@ -14,9 +14,15 @@ source(source.file)
 ##  First: we load in the map and variables datasets-----
 ##  Data load;
 load('../Data/Analysis data/England and Wales benefits 0111 final.Rdata')
-city.centres<-read.csv('../Data/City centres/UK city centres.csv')
+used.crs<-crs(ew.2001)
 
-##  The subsetting to only certain cities
+##  Read in city centres file.
+city.centres<-read.csv('../Data/City centres/UK city centres.csv')
+##  For now we will omit London (which we will handle with a diff script)
+mono.centres.coords<-coordinates(city.centres[,c('EastingD','NorthingD')])
+mono.centres.sp<-SpatialPointsDataFrame(mono.centres.coords, city.centres, proj4string = used.crs)
+
+##  The subsetting to only certain cities used in the analysis
 valid.cities<-as.character(city.centres$la[city.centres$la%in%ew.2001$la])
 cities.list<-list(NULL)
 for (i in 1:length(valid.cities)){
@@ -24,28 +30,27 @@ for (i in 1:length(valid.cities)){
 }
 names(cities.list)<-valid.cities
 ##  So now we have a cities.list file of only the relevant cities
-rm(ew.2001) #remove to save space
+rm(ew.2001) #remove large .shp to save space
 
 ##  Second: We need to create two different variables. One is distance from city centre (we will choose mid point D). Another is by some sort of accessibility index
 
 ##  Distance by centre. Variable dist.d
 for (i in 1:length(cities.list)){
 temp.mids<-city.centres[city.centres$la==valid.cities[i],]
-centroids<-getSpPPolygonsLabptSlots(cities.list[[i]])
+centroids<-cities.list[[i]]@data[,c("cent.x","cent.y")]
 cities.list[[i]]$dist.d<-euclid.dist(point=c(t(temp.mids[,9:10])),x=centroids)
 }
-
 ##  Accessibility based on Hansen (1959). Guess between -1 and -2 for the exponent
 ##  This is a for loop that calulcate the index (with an extra 100m added to distance for terminal time)
 cities.emp<-list(NULL)
 for (k in 1:length(cities.list)){
-  temp.df<-cities.list[[k]]
-  centroids<-getSpPPolygonsLabptSlots(temp.df)
+  centroids<-cities.list[[k]]@data[,c("cent.x","cent.y")]
   temp.df<-cities.list[[k]]@data
+  
   
   temp.emp<-list(NULL)
   for (i in 1:nrow(temp.df)){
-    temp.dist<-euclid.dist(point=centroids[i,],x=centroids)
+    temp.dist<-euclid.dist(point=as.numeric(centroids[i,]),x=centroids)
     temp.out<-list(NULL)
     
     ## 2001 accessibility index. We need the negative of accessibility
@@ -66,7 +71,7 @@ for (i in 1:length(cities.list)){
   cities.list[[i]]<-cbind(cities.list[[i]],cities.emp[[i]])
 }
 
-head(cities.list[[i]]@data)
+
 
 ##  RCI routine----
 ##  Third: Now for each city we have to establish a routine for working out the RCI results
