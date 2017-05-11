@@ -1,45 +1,46 @@
-#######################################################
-##  This is the analysis for the biggest cities based #
-##  on local authority                                #
-##  This time the boundaries are drawn based on their #
-##  travel to work areas                              #
-##  We are excluding london from this for now         #
+##  This is the analysis for the biggest cities based on travel to work area####                      
 ##  Start: 18/3/2017                                  #
-#######################################################
+##  We are excluding london from this for now         #
+##  Update: 11/5/2017 
+##  rewritten for purposes of style and clarity
 
-##  Pre: Load in all the RCI functions we need
-source.file<-'RCI functions.R' #path to source
+##  Pre: Load in all the RCI functions we need----
+source.file <- 'RCI functions.R' #path to source
 source(source.file)
 
-##  First: we load in the map and variables datasets-----
+##  1: Load in the map and variables datasets-----
 ##  Data load;
 load('../Data/Analysis data/England and Wales benefits 0111 final.Rdata')
-used.crs<-crs(ew.2001)
+used.crs <- crs(ew.2001)
 
 ##  Read in city centres file.
-city.centres<-read.csv('../Data/City centres/UK city centres.csv')
+city.centres <- read.csv('../Data/City centres/UK city centres.csv')
 ##  For now we will omit London (which we will handle with a diff script)
-city.centres<-city.centres[-1,]
-mono.centres.coords<-coordinates(city.centres[,c('EastingD','NorthingD')])
-mono.centres.sp<-SpatialPointsDataFrame(mono.centres.coords, city.centres, proj4string = used.crs)
+city.centres <- city.centres[-1,]
+mono.centres.coords <- coordinates(city.centres[, c('EastingD', 'NorthingD')])
+mono.centres.sp <- SpatialPointsDataFrame(mono.centres.coords, city.centres, 
+                                        proj4string = used.crs)
 
-which.ttwa<-ew.2001@data$ttwa[ew.2001@data$la%in%city.centres$la]
+which.ttwa <- ew.2001@data$ttwa[ew.2001@data$la %in% city.centres$la]
 ##  getting ttwa
-valid.ttwa<-unique(which.ttwa)
+valid.ttwa <- unique(which.ttwa)
 
-##  Step two: 
-##  The subsetting to only certain ttwa
-ttwa.list<-list(NULL)
+##  2: The subsetting to only certain ttwa and putting data in lists ----
+ttwa.list <- list(NULL)
 for (i in 1:length(valid.ttwa)){
-  ttwa.list[[i]]<-subset(ew.2001,ttwa==valid.ttwa[i])
+  ttwa.list[[i]] <- subset(ew.2001, ttwa==valid.ttwa[i])
 }
-names(ttwa.list)<-valid.ttwa
+
+names(ttwa.list) <- valid.ttwa
 rm(ew.2001) # remvoe shp file to save space
 
-##  Second: Unlike LA we need 3 different distance ordering variables. One is distance from city centre (we will choose mid point D). Another is closes distance to a centre. Yet another is by some sort of accessibility index
+##  3: Creating distance variables using functions----
+##  Unlike LA we need 3 different distance ordering variables. One is distance 
+##  from city centre (we will choose mid point D). Another is closes distance to
+##  a centre. Yet another is by some sort of accessibility index
 ##  Distance by centre. Variable dist.d. Each ttwa has only one match to a city
 
-
+##  Distance to centre
 for (i in 1:length(ttwa.list)){
   temp.mids<-mono.centres.sp[ttwa.list[[i]],]
   centroids<-ttwa.list[[i]]@data[,c("cent.x","cent.y")]
@@ -48,90 +49,100 @@ for (i in 1:length(ttwa.list)){
 
 ##  Distance to nearest centre
 ##  Load inthe dataset with multiple centre and make it into a spatial points df
-ttwa.centres<-read.csv('../Data/City centres/ttwa 2011 la centres.csv',stringsAsFactors = F)
-ttwa.centres<-na.omit(ttwa.centres[1:4]) #we do not need the last note col
-ttwa.centres$EastingC<-as.numeric(ttwa.centres$EastingC)
-ttwa.centres.sp<-SpatialPointsDataFrame(coords= coordinates(ttwa.centres[,c('EastingC','NorthingC')]),data=data.frame(ttwa.centres),proj4string=used.crs)
+ttwa.centres <- read.csv('../Data/City centres/ttwa 2011 la centres.csv', 
+                       stringsAsFactors = F)
+ttwa.centres <- na.omit(ttwa.centres[1:4]) #we do not need the last note col
+ttwa.centres$EastingC <- as.numeric(ttwa.centres$EastingC)
+ttwa.centres.sp<-SpatialPointsDataFrame(
+  coords = coordinates(ttwa.centres[,c('EastingC', 'NorthingC')]), 
+  data = data.frame(ttwa.centres), 
+  proj4string = used.crs)
 
 ##  Define the routine
-for (j in 1:length(ttwa.list)){
+for (j in 1:length(ttwa.list)) {
 
-  temp.ttwa<-ttwa.list[[j]]
-  temp.centres<-ttwa.centres.sp[ttwa.centres.sp$LA%in%ttwa.list[[j]]$la,] #centre of large LAs even partially in the zone
+  temp.ttwa <- ttwa.list[[j]]
+  temp.centres <- ttwa.centres.sp[ttwa.centres.sp$LA %in% ttwa.list[[j]]$la, ] 
+  #centre of large LAs even partially in the zone
   
   ## Computing the distance to centres stat
-  centroids<-temp.ttwa@data[,c("cent.x","cent.y")]
+  centroids <- temp.ttwa@data[, c("cent.x", "cent.y")]
   ##  list of vectors denoting distance of a centre
-  distances<-list(NULL)
+  distances <- list(NULL)
   for(i in 1:nrow(temp.centres@data)){
-    distances[[i]]<-euclid.dist(point=c(t(temp.centres@data[i,c('EastingC','NorthingC')])),x=centroids)
+    distances[[i]] <- euclid.dist(
+      point=c(t(temp.centres@data[i, c('EastingC', 'NorthingC')])),
+      x=centroids)
   }
-  distances<-do.call(cbind,distances)
-  ttwa.list[[j]]$dist.nearest<-apply(distances,1,min)
-  ttwa.list[[j]]$centre<-as.character(temp.centres@data$LA[apply(distances,1,which.min)]) #tells us which centre
+  
+  distances <- do.call(cbind,distances)
+  ttwa.list[[j]]$dist.nearest <- apply(distances, 1, min)
+  ttwa.list[[j]]$centre <- as.character(temp.centres@data$LA[apply(distances, 1, which.min)]) #tells us which centre
 }
 
 ##  Accessibility based on Hansen (1959). Guess between -1 and -2 for the exponent
 ##  This is a for loop that calulcate the index (with an extra 100m added to distance for terminal time)
-ttwa.emp<-list(NULL)
+ttwa.emp <- list(NULL)
 for (k in 1:length(ttwa.list)){
 
-  temp.df<-ttwa.list[[k]]@data
-  centroids<-temp.df[,c("cent.x","cent.y")]
+  temp.df <- ttwa.list[[k]]@data
+  centroids <- temp.df[, c("cent.x", "cent.y")]
 
-  temp.emp<-list(NULL)
+  temp.emp <- list(NULL)
   for (i in 1:nrow(temp.df)){
 
-    temp.dist<-euclid.dist(point=as.numeric(centroids[i,]),x=centroids)
-    temp.out<-list(NULL)
+    temp.dist <- euclid.dist(point=as.numeric(centroids[i, ]), x=centroids)
+    temp.out <- list(NULL)
     
     ## 2001 accessibility index. We need the negative of accessibility
-    hansen1.2001<--sum(temp.df$work.pop2001*(temp.dist+100)^(-1))
-    hansen2.2001<--sum(temp.df$work.pop2001*(temp.dist+100)^(-2))
+    hansen1.2001 <- -sum(temp.df$work.pop2001*(temp.dist+100)^(-1))
+    hansen2.2001 <- -sum(temp.df$work.pop2001*(temp.dist+100)^(-2))
     
     ## 2011 accessibility index
-    hansen1.2011<--sum(temp.df$work.pop2011*(temp.dist+100)^(-1))
-    hansen2.2011<--sum(temp.df$work.pop2011*(temp.dist+100)^(-2))
+    hansen1.2011 <- -sum(temp.df$work.pop2011*(temp.dist+100)^(-1))
+    hansen2.2011 <- -sum(temp.df$work.pop2011*(temp.dist+100)^(-2))
     
-    temp.emp[[i]]<-cbind(hansen1.2001,hansen1.2011,hansen2.2001,hansen2.2011)
+    temp.emp[[i]] <- cbind(hansen1.2001, hansen1.2011,
+                           hansen2.2001, hansen2.2011)
   }
-  ttwa.emp[[k]]<-do.call(rbind,temp.emp)
-  colnames(ttwa.emp[[k]])<-c('hansen1.2001','hansen1.2011','hansen2.2001','hansen2.2011')
+  ttwa.emp[[k]] <- do.call(rbind, temp.emp)
+  colnames(ttwa.emp[[k]]) <- c('hansen1.2001', 'hansen1.2011',
+                               'hansen2.2001', 'hansen2.2011')
 }
 
 for (i in 1:length(ttwa.list)){
-  ttwa.list[[i]]<-cbind(ttwa.list[[i]],ttwa.emp[[i]])
+  ttwa.list[[i]] <- cbind(ttwa.list[[i]], ttwa.emp[[i]])
 }
 
 
-##  RCI routine----
-##  Third: Now for each city we have to establish a routine for working out the RCI results
-##  First we will get the point estimates; this is for checking as much as anything else
-RCI.tables<-list(NULL)
-gRCI.tables<-list(NULL)
+##  4: RCI routines----
+
+##  4.1: First we will get the point estimates; this is for checking ====
+RCI.tables <- list(NULL)
+gRCI.tables <- list(NULL)
 for (i in 1:length(ttwa.list)){
 
-  temp.df<-ttwa.list[[i]]@data #we only need the data file from here on in 
+  temp.df <- ttwa.list[[i]]@data #we only need the data file from here on in 
   ##  We will need to work out the rci for the various cols
-  temp.rci<-list(NULL)
-  temp.grci<-list(NULL)
+  temp.rci <- list(NULL)
+  temp.grci <- list(NULL)
 
   for(j in 1:3){
-    id2001<-which(names(temp.df)%in%c('jsa2001','is2001','ib2001'))[j]
-    id2011<-which(names(temp.df)%in%c('jsa2011','is2011','ib2011'))[j] #this is the cols for the various year data fo each measure
-    id.dist01<-which(names(temp.df)%in%c('dist.d','dist.nearest','hansen1.2001','hansen2.2001'))
-    id.dist11<-which(names(temp.df)%in%c('dist.d','dist.nearest','hansen1.2011','hansen2.2011'))
+    id2001 <- which(names(temp.df)%in%c('jsa2001','is2001','ib2001'))[j]
+    id2011 <- which(names(temp.df)%in%c('jsa2011','is2011','ib2011'))[j] #this is the cols for the various year data fo each measure
+    id.dist01 <- which(names(temp.df)%in%c('dist.d','dist.nearest','hansen1.2001','hansen2.2001'))
+    id.dist11 <- which(names(temp.df)%in%c('dist.d','dist.nearest','hansen1.2011','hansen2.2011'))
 
-    g.rci2001<-apply(temp.df[,id.dist01],2,g.rci,y=temp.df[,id2001],x=temp.df$w.pop2001-temp.df[,id2001])
-    g.rci2011<-apply(temp.df[,id.dist11],2,g.rci,y=temp.df[,id2011],x=round(temp.df$w.pop2011)-temp.df[,id2011])
-    temp.tab<-cbind(g.rci2001,g.rci2011)
-    out.tab<-aggregate(temp.tab,by=list(temp.df$centre),sum)
-    total.ttwa<-c(colSums(out.tab[,-1]))
-    total.ttwa<-data.frame(matrix(total.ttwa,ncol=2))
-    total.ttwa$diff<-total.ttwa$X2-total.ttwa$X1
+    g.rci2001 <- apply(temp.df[,id.dist01],2,g.rci,y=temp.df[,id2001],x=temp.df$w.pop2001-temp.df[,id2001])
+    g.rci2011 <- apply(temp.df[,id.dist11],2,g.rci,y=temp.df[,id2011],x=round(temp.df$w.pop2011)-temp.df[,id2011])
+    temp.tab <- cbind(g.rci2001,g.rci2011)
+    out.tab <- aggregate(temp.tab,by=list(temp.df$centre),sum)
+    total.ttwa <- c(colSums(out.tab[,-1]))
+    total.ttwa <- data.frame(matrix(total.ttwa,ncol=2))
+    total.ttwa$diff <- total.ttwa$X2-total.ttwa$X1
     
-    temp.rci[[j]]<-total.ttwa
-    temp.grci[[j]]<-out.tab
+    temp.rci[[j]] <- total.ttwa
+    temp.grci[[j]] <- out.tab
   }
 
 #rci table
@@ -151,18 +162,17 @@ for (i in 1:length(ttwa.list)){
   temp.res2$stat<-c('jsa','is','ib')
   gRCI.tables[[i]]<-temp.res2
 }
-RCI.tables
-RCI.tables<-do.call(rbind,RCI.tables)
-colnames(RCI.tables)<-c(rep('jsa',3),rep('is',3),rep('ib',3))
-write.csv(RCI.tables,file='../Results/RCI TTWA point estimates.csv')
-
-gRCI.tables
-gRCI.tables<-do.call(rbind,gRCI.tables)
+##  Assemble total RCI tables
+RCI.tables <- do.call(rbind, RCI.tables)
+colnames(RCI.tables)<-c(rep('jsa', 3), rep('is', 3), rep('ib', 3))
+write.csv(RCI.tables, file='../Results/RCI TTWA point estimates.csv')
+##  Assemble disaggregated RCI tables
+gRCI.tables<-do.call(rbind, gRCI.tables)
 write.csv(gRCI.tables,file='../Results/gRCI TTWA point estimates.csv')
 
 
-##  Second step for the output is to simply get the above but accounting for the uncertainty
-##  The results are already saved; we will complete this for the estimates that used two separate models
+##  4.2: Now create the results taking into account uncertainty. CAR version====  
+##  The results are already saved; 
 rci.raw.ci<-list(NULL)
 
 for (i in 1:length(ttwa.list)){
@@ -174,10 +184,12 @@ for (i in 1:length(ttwa.list)){
   saved.results<-list(NULL) #A list that will contain 3 objects; the saved results for jsa, ib, is
   
   for (j in 1:length(var.name)){
-    load(file=paste('../Data/Analysis data/Model estimates/TTWA/',saved.name,var.name[j],'.Rdata',sep='')) #all the list objects are called 'models'
+    load(file=paste('../Data/Analysis data/Model estimates/TTWA/',
+                    saved.name,var.name[j],
+                    '.Rdata',sep='')) #all the list objects are called 'models'
     
-    pred01<-predict.simple(models[[1]],temp.df$w.pop2001)
-    pred11<-predict.simple(models[[2]],round(temp.df$w.pop2011))
+    pred01 <- predict.simple(models[[1]],temp.df$w.pop2001)
+    pred11 <- predict.simple(models[[2]],round(temp.df$w.pop2011))
 
     rm(models)
     
@@ -234,6 +246,54 @@ for (i in 1:length(ttwa.list)){
                               unlist(result.hansen1),unlist(result.hansen2))
     row.names(saved.results[[j]])<-c('dist.d','dist.nearest','hansen.1','hansen.2')
     colnames(saved.results[[j]])<-paste(var.name[j],colnames(saved.results[[j]]))
+  }
+  rci.raw.ci[[i]]<-do.call(cbind,saved.results)
+  rci.raw.ci[[i]]<-cbind(rci.raw.ci[[i]],saved.name)
+}
+rci.raw.tab<-do.call(rbind,rci.raw.ci)
+write.csv(rci.raw.tab,file='../Results/RCI TTWA raw CI.csv')
+
+##  4.2.1: Addendum--doing the CAR for the disaggregated RCI results====
+
+rci.raw.ci <- list(NULL)
+for (i in 1:length(ttwa.list)){
+  
+  ##Load in the model data
+  saved.name <-names(ttwa.list)[[i]]
+  temp.df <- ttwa.list[[i]]
+  
+  var.name <- c('jsa', 'ib', 'is')
+  
+  saved.results <- list(NULL) #A list that will contain 3 objects; 
+  #the saved results for jsa, ib, is
+  
+  ##  Now to seperately get the results for each type of claimant
+  for (j in 1:length(var.name)){
+    load(file=paste('../Data/Analysis data/Model estimates/TTWA/',
+                    saved.name,var.name[j],
+                    '.Rdata',sep='')) #all the list objects are called 'models'
+    predict.simple
+    
+    models[[1]]
+    
+    pred01 <- predict.simple(models[[1]],temp.df$w.pop2001)
+    pred11 <- predict.simple(models[[2]],round(temp.df$w.pop2011))
+    
+    rm(models)
+    
+    ##Distance to any centre: tabled by nearest centre
+    rci.dist.nearest.2001<-list(NULL)
+    rci.dist.nearest.2011<-list(NULL)
+    for (k in 1:nrow(pred01)){
+      rci.dist.nearest.2001[[k]]<-g.rci(sort.var=temp.df$dist.nearest,x=temp.df$w.pop2001-pred01[k,],y=pred01[k,])
+      rci.dist.nearest.2011[[k]]<-rci(sort.var=temp.df$dist.nearest,x=temp.df$w.pop2011-pred11[k,],y=pred11[k,])
+    }
+    rci.dist.nearest.2001<-unlist(rci.dist.nearest.2001)
+    rci.dist.nearest.2011<-unlist(rci.dist.nearest.2011)
+    rci.dist.nearest.diff<-rci.dist.nearest.2011-rci.dist.nearest.2001
+    result.dist.nearest<-lapply(list(rci.dist.nearest.2001,rci.dist.nearest.2011,rci.dist.nearest.diff),quantile,probs=c(0.5,0.025,0.975))
+    
+  
   }
   rci.raw.ci[[i]]<-do.call(cbind,saved.results)
   rci.raw.ci[[i]]<-cbind(rci.raw.ci[[i]],saved.name)
