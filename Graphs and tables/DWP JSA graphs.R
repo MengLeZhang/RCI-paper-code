@@ -1,19 +1,21 @@
 ##  Graphing JSA over 2000-2016 ####
-##  Start: 9/5/2017 We need to set out to graph the info about aci over cities and ttwa to show that the
-##  recession caused a big dip in aci. Also the number of claimants jumped up in all cities during that time
+##  Start: 9/5/2017 We need to set out to graph the info about aci over cities 
+##  and ttwa to show that the recession caused a big dip in aci. Also the number
+##  of claimants jumped up in all cities during that time
 ##> library----
-graph.lib<-c('ggplot2')
-lapply(graph.lib,library,character.only=T)
+graph.lib <- c('ggplot2')
+lapply(graph.lib,library, character.only=T)
 aci_la.tab
 ##  Graph 1: Graphing aci for la and ttwa----
-aci_la.tab<-read.csv('../Results/ACI LA point estimates 00-16.csv',stringsAsFactors = F)
-aci_london.tab<-read.csv('../Results/ACI london point estimates 00-16.csv',stringsAsFactors = F)
-aci_london.tab$city<-'london'
-aci_la.tab<-rbind(aci_la.tab,aci_london.tab) #merge together
+acila.tab <- read.csv('../Results/ACI LA point estimates 00-16.csv', 
+                     stringsAsFactors = F)
+aci_london.tab <- read.csv('../Results/ACI london point estimates 00-16.csv', 
+                      stringsAsFactors = F)
+aci_london.tab$city <- 'london'
+aci_la.tab <- rbind(aci_la.tab, aci_london.tab) #merge together
 
 ##  reformat it to have var for la, date and aci
-which.may<-grep('May',names(aci_la.tab))
-
+which.may <- grep('May', names(aci_la.tab))
 
 temp.list<-c(NULL)
 for (i in 1:length(which.may)){

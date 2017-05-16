@@ -272,9 +272,6 @@ for (i in 1:length(ttwa.list)){
     load(file=paste('../Data/Analysis data/Model estimates/TTWA/',
                     saved.name,var.name[j],
                     '.Rdata',sep='')) #all the list objects are called 'models'
-    predict.simple
-    
-    models[[1]]
     
     pred01 <- predict.simple(models[[1]],temp.df$w.pop2001)
     pred11 <- predict.simple(models[[2]],round(temp.df$w.pop2011))
@@ -282,26 +279,39 @@ for (i in 1:length(ttwa.list)){
     rm(models)
     
     ##Distance to any centre: tabled by nearest centre
-    rci.dist.nearest.2001<-list(NULL)
-    rci.dist.nearest.2011<-list(NULL)
+    rci.results.tab <- list(NULL)
+
     for (k in 1:nrow(pred01)){
-      rci.dist.nearest.2001[[k]]<-g.rci(sort.var=temp.df$dist.nearest,x=temp.df$w.pop2001-pred01[k,],y=pred01[k,])
-      rci.dist.nearest.2011[[k]]<-rci(sort.var=temp.df$dist.nearest,x=temp.df$w.pop2011-pred11[k,],y=pred11[k,])
-    }
-    rci.dist.nearest.2001<-unlist(rci.dist.nearest.2001)
-    rci.dist.nearest.2011<-unlist(rci.dist.nearest.2011)
-    rci.dist.nearest.diff<-rci.dist.nearest.2011-rci.dist.nearest.2001
-    result.dist.nearest<-lapply(list(rci.dist.nearest.2001,rci.dist.nearest.2011,rci.dist.nearest.diff),quantile,probs=c(0.5,0.025,0.975))
+      ##  g.rci will output a vector showing the rci contribution of each lsoa
+      rci.lsoa2001<-g.rci(sort.var=temp.df$dist.nearest,
+                                        x=temp.df$w.pop2001-pred01[k,],
+                                        y=pred01[k,])
+
+      rci.lsoa2011<-g.rci(sort.var=temp.df$dist.nearest,
+                                        x=temp.df$w.pop2011-pred11[k,],
+                                        y=pred11[k,])
+      ## Now do a table showing rci per centre
+      bind.rci<-cbind(rci2001=rci.lsoa2001, rci2011=rci.lsoa2011)
+      rci.results.tab[[k]] <- aggregate(bind.rci, by=list(temp.df$centre), sum)
     
-  
+    }
+    rci.results.tab <- do.call(rbind, rci.results.tab)
+    rci.results.tab$diff <- rci.results.tab$rci2011 - rci.results.tab$rci2001
+    saved.results[[j]] <- aggregate(rci.results.tab[, -1], 
+                                    by = list(rci.results.tab$Group.1),
+                                    quantile, probs=c(0.5,0.025,0.975))
+    
+    colnames(saved.results[[j]])<-paste(var.name[j],colnames(saved.results[[j]]))
+    
   }
   rci.raw.ci[[i]]<-do.call(cbind,saved.results)
   rci.raw.ci[[i]]<-cbind(rci.raw.ci[[i]],saved.name)
 }
-rci.raw.tab<-do.call(rbind,rci.raw.ci)
-write.csv(rci.raw.tab,file='../Results/RCI TTWA raw CI.csv')
 
-### The MCAR version of the same
+rci.raw.tab<-do.call(rbind,rci.raw.ci)
+write.csv(rci.raw.tab,file='../Results/RCI TTWA raw CI disagg.csv')
+
+##  4.3:The MCAR version of the same====
 
 rci.mcar.ci<-list(NULL)
 
@@ -374,6 +384,65 @@ for (i in 1:length(ttwa.list)){
 
 rci.mcar.ci<-do.call(rbind,rci.mcar.ci)
 write.csv(rci.mcar.ci,file='../Results/RCI TTWA raw CI mcar.csv')
+
+##  4.3.1: MCAR version of the disaggregated results =====
+rci.mcar.ci<-list(NULL)
+
+for (i in 1:length(ttwa.list)){
+  saved.name<-names(ttwa.list)[[i]]
+  temp.df<-ttwa.list[[i]]
+  
+  var.name<-c('jsa','ib','is')
+  
+  saved.results<-list(NULL) #A list that will contain 3 objects; the saved results for jsa, ib, is
+  
+  for (j in 1:length(var.name)){
+    print(paste(saved.name,j))
+    load(file=paste('../Data/Analysis data/Model estimates/TTWA/MCAR',saved.name,var.name[j],'.Rdata',sep='')) #all the list objects are called 'models'
+    
+    N.mat <- cbind(temp.df$w.pop2001, round(temp.df$w.pop2011))
+    N <- as.numeric(t(N.mat)) #N is an alternating vector [i.e. (pop01,pop11,pop01,pop11 etc for eacg zone)]. Ditto for our fitted values
+    
+    pred<-predict.simple(model.MCAR,N)
+    odds<-which(1:ncol(pred)%%2==1)
+    pred01<-pred[,odds] #the odd number rows are the results for each zone in 2001
+    pred11<-pred[,odds+1]
+    
+    rm(model.MCAR,pred)
+    
+    ##Distance to any centre: tabled by nearest centre
+    rci.results.tab <- list(NULL)
+    
+    for (k in 1:nrow(pred01)){
+      ##  g.rci will output a vector showing the rci contribution of each lsoa
+      rci.lsoa2001<-g.rci(sort.var=temp.df$dist.nearest,
+                          x=temp.df$w.pop2001-pred01[k,],
+                          y=pred01[k,])
+      
+      rci.lsoa2011<-g.rci(sort.var=temp.df$dist.nearest,
+                          x=temp.df$w.pop2011-pred11[k,],
+                          y=pred11[k,])
+      ## Now do a table showing rci per centre
+      bind.rci<-cbind(rci2001=rci.lsoa2001, rci2011=rci.lsoa2011)
+      rci.results.tab[[k]] <- aggregate(bind.rci, by=list(temp.df$centre), sum)
+      
+    }
+    rci.results.tab <- do.call(rbind, rci.results.tab)
+    rci.results.tab$diff <- rci.results.tab$rci2011 - rci.results.tab$rci2001
+    saved.results[[j]] <- aggregate(rci.results.tab[, -1], 
+                                    by = list(rci.results.tab$Group.1),
+                                    quantile, probs=c(0.5,0.025,0.975))
+    
+    colnames(saved.results[[j]])<-paste(var.name[j],colnames(saved.results[[j]]))
+    
+  }
+  
+  rci.mcar.ci[[i]]<-do.call(cbind,saved.results)
+  rci.mcar.ci[[i]]<-cbind(rci.mcar.ci[[i]],saved.name)
+}
+
+rci.mcar.ci<-do.call(rbind,rci.mcar.ci)
+write.csv(rci.mcar.ci,file='../Results/RCI TTWA raw CI mcar disagg.csv')
 
 ##  Dissimilarity index----
 
